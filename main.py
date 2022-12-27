@@ -1,69 +1,20 @@
 import random
+from character import Character
+from textUtils import Node
+import sys
+import pygame
+
+WIDTH = 1920
+HEIGHT = 1080
 
 
-class Character:
-    def __init__(self, name, gender, surname, father=None, mother=None, spouse=None):
-        self.name = name
-        self.gender = gender
-        self.surname = surname
-        self.father = father
-        self.mother = mother
-        self.spouse = spouse
-        self.children = []
+class IdGenerator:
+    def __init__(self):
+        self.id = -1
 
-    def search_direct_lineage(self, family, level):
-        if level in family:
-            family[level].append(self)
-        else:
-            family.update({level: [self]})
-
-        if self.mother is not None:
-            self.mother.search_direct_lineage(family, level + 1)
-        if self.father is not None:
-            self.father.search_direct_lineage(family, level + 1)
-
-    def direct_ancestors(self):
-        family = {}
-        self.search_direct_lineage(family, 0)
-        return family
-
-    def search_dinasty(self, dinasty, level):
-        if level - 1 in dinasty:
-            dinasty[level - 1].extend(self.children)
-        else:
-            if len(self.children) > 0:
-                dinasty.update({level - 1: self.children})
-
-        if self.father is not None:
-            self.father.search_dinasty(dinasty, level + 1)
-        if self.father is None:
-            dinasty.update({level: [self]})
-
-    def dinasty(self):
-        dinasty = {}
-        self.search_dinasty(dinasty, 0)
-        return dinasty
-
-    def add_child(self, names):
-        new_gender = random.choice(['male', 'female'])
-        if self.gender == 'male':
-            child = Character(random.choice(names[0]), new_gender, self.surname, self, self.spouse)
-        else:
-            child = Character(random.choice(names[1]), new_gender, self.spouse.surname, self.spouse, self)
-        self.children.append(child)
-        self.spouse.children.append(child)
-        return child
-
-    def __str__(self):
-        if self.gender == 'male':
-            prefix = 'Sir'
-        else:
-            prefix = 'Lady'
-
-        if self.father and self.mother:
-            return f'{prefix} {self.name} {self.surname} child of {self.father.name} with {self.mother.name}'
-        else:
-            return f'founder {prefix} {self.name} of {self.surname}'
+    def get_next_id(self):
+        self.id += 1
+        return self.id
 
 
 def read_names(path):
@@ -92,25 +43,57 @@ def read_surnames(path):
     return lines
 
 
-def print_tree(tree_list):
-    max_value_length = len(max(tree_list.values(), key=len))
+def print_tree(tree_list, font, screen):
+    position_y = 100
+    position_x = 100
+    color = 'black'
+    space = 130
+    nodes = []
+
     for level in reversed(tree_list):
-        space = max_value_length - len(tree_list[level])
-        print(f"{level}." + " " * space, end="")
+        max_value_length = len(max(tree_list.values(), key=len))
+
+        i = 0
         for character in tree_list[level]:
-            print(f'|{character.name} {character.surname}|', end=" ")
-        print()
+            if i == 0:
+                initial_space = max_value_length - len(tree_list[level])
+                position_x += (initial_space * 130)
+
+            node = Node(character, (position_x, position_y), font, color,
+                        character.children)
+            nodes.append(node)
+
+            position_x += len(node.character.name) + space
+            i += 1
+
+        position_x = 100
+        position_y += 50
+
+    for node in nodes:
+        node_children = []
+        if len(node.character.children) != 0:
+            for child in node.character.children:
+                for node_2 in nodes:
+                    if node_2.character is child:
+                        node_children.append(node_2)
+
+        for child_node in node_children:
+            pygame.draw.line(screen, (255, 0, 0), node.position, child_node.position)
+
+        node.draw(screen)
 
 
-def create_founders(world_characters, names, surnames):
+def create_founders(world_characters, names, surnames, id_generator):
     for i in range(20):
         # read names 0 male 1 female
-        new_male_founder = Character(random.choice(names[0]), 'male', random.choice(surnames))
-        new_female_founder = Character(random.choice(names[1]), 'female', random.choice(surnames))
+        new_male_founder = Character(id_generator.get_next_id(), random.choice(names[0]), 'male',
+                                     random.choice(surnames))
+        new_female_founder = Character(id_generator.get_next_id(), random.choice(names[1]), 'female',
+                                       random.choice(surnames))
         new_male_founder.spouse = new_female_founder
         new_female_founder.spouse = new_male_founder
-        world_characters.append(new_female_founder)
         world_characters.append(new_male_founder)
+        world_characters.append(new_female_founder)
 
 
 def marry_event(world_characters, character):
@@ -125,36 +108,68 @@ def main():
     names = read_names("names.txt")
     surnames = read_surnames("surnames.txt")
     # characters in world
+    id_generator = IdGenerator()
     world_characters = []
-    create_founders(world_characters, names, surnames)
+    create_founders(world_characters, names, surnames, id_generator)
     # simulate world
-    YEARS_TO_PASS = 200
+    YEARS_TO_PASS = 400
     for i in range(YEARS_TO_PASS):
         for character in world_characters:
             chance = random.randint(0, 1000)
             if chance > 980 and character.spouse is not None:
-                child = character.add_child(names)
+                child = character.add_child(names, id_generator)
                 world_characters.append(child)
             elif chance > 980 and character.spouse is None:
                 marry_event(world_characters, character)
 
     for i, character in enumerate(world_characters):
-        print(i, character)
+        if i != character.id_key:
+            print(f'erro {i} != {character.id_key}')
+            print("!!")
+            break
+        else:
+            print(character.id_key, character)
 
     # see detail
-    while True:
-        choice = int(input(">:"))
-        char = world_characters[choice]
-        print(char)
-        subchoice = int(input("? 1 direct 2 patrilineal (0 to exit): "))
-        if subchoice == 1:
-            print("-- DIRECT LINEAGE --")
-            tree = char.direct_ancestors()
-            print_tree(tree)
-        elif subchoice == 2:
-            print("-- DINASTY LINEAGE -- ")
-            tree = char.dinasty()
-            print_tree(tree)
+    # while True:
+    #     choice = int(input(">:"))
+    #     char = world_characters[choice]
+    #     print(char)
+    #     subchoice = int(input("? 1 direct 2 patrilineal (0 to exit): "))
+    #     if subchoice == 1:
+    #         print("-- DIRECT LINEAGE --")
+    #         tree = char.direct_ancestors()
+    #         print_tree(tree)
+    #     elif subchoice == 2:
+    #         print("-- DINASTY LINEAGE -- ")
+    #         # tree = char.dinasty()
+    #         print_tree(tree)
+
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)  # TAMANHO JANELA
+    pygame.display.set_caption("Dinasty View")  # TITULO
+    clock = pygame.time.Clock()
+    game_font = pygame.font.Font("graphics\\alagard.ttf", 15)
+
+    running = True
+    while running:
+        clock.tick(60)  # FPS
+
+        # close window
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+
+        screen.fill('white')
+
+        char = world_characters[15000]
+        tree = char.direct_ancestors()
+        print_tree(tree, game_font, screen)
+
+        pygame.display.update()
 
 
 if __name__ == "__main__":
