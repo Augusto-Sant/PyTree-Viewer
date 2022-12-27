@@ -44,6 +44,7 @@ def read_surnames(path):
 
 
 def draw_tree(tree_list, character_chosen, font, screen, camera_x, camera_y):
+    # camera x and y for offset of objects after camera movement
     position_y = (HEIGHT // 2) - 150 - camera_y
     position_x = 200 - camera_x
     color = 'white'
@@ -114,14 +115,16 @@ def marry_event(world_characters, character):
             character2.spouse = character
 
 
-def main():
+def generate_world_characters():
     # read names 0 male 1 female
     names = read_names("names.txt")
     surnames = read_surnames("surnames.txt")
+
     # characters in world
     id_generator = IdGenerator()
     world_characters = []
     create_founders(world_characters, names, surnames, id_generator)
+
     # simulate world
     YEARS_TO_PASS = 100
     for i in range(YEARS_TO_PASS):
@@ -133,6 +136,7 @@ def main():
             elif chance > 980 and character.spouse is None:
                 marry_event(world_characters, character)
 
+    # checks to see if any character in world has wrong id_key
     for i, character in enumerate(world_characters):
         if i != character.id_key:
             print(f'erro {i} != {character.id_key}')
@@ -141,46 +145,40 @@ def main():
         else:
             print(character.id_key, character)
 
-    # see detail
-    # while True:
-    #     choice = int(input(">:"))
-    #     char = world_characters[choice]
-    #     print(char)
-    #     subchoice = int(input("? 1 direct 2 patrilineal (0 to exit): "))
-    #     if subchoice == 1:
-    #         print("-- DIRECT LINEAGE --")
-    #         tree = char.direct_ancestors()
-    #         print_tree(tree)
-    #     elif subchoice == 2:
-    #         print("-- DINASTY LINEAGE -- ")
-    #         # tree = char.dinasty()
-    #         print_tree(tree)
+    return world_characters
 
+
+def main():
+    world_characters = generate_world_characters()
     pygame.init()
-    screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)  # TAMANHO JANELA
-    pygame.display.set_caption("Dinasty View")  # TITULO
+    screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)  # window size
+    pygame.display.set_caption("Dinasty View")  # title
     clock = pygame.time.Clock()
     game_font = pygame.font.Font("graphics\\alagard.ttf", 15)
     title_font = pygame.font.Font("graphics\\alagard.ttf", 25)
 
-    ##
+    # initialize camera and mouse position
     camera_x = 0
     camera_y = 0
     camera_speed = 5
     mouse_x = 0
     mouse_y = 0
-    ##
+
+    # initialize first char for tree view
     id_char_searched = 74
+
+    # initialize basic tree ui
     texts_in_screen = []
     dinasty_tree = True
     direct_tree = False
+
     running = True
     while running:
         clock.tick(60)  # FPS
 
-        # close window
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                # close window
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
@@ -223,11 +221,13 @@ def main():
 
         nodes = draw_tree(tree, char, game_font, screen, camera_x, camera_y)
 
+        # see if mouse clicked one of the nodes in tree view
         for node in nodes:
             if node.circle_rect.collidepoint(mouse_x, mouse_y) and pygame.mouse.get_pressed()[0]:
                 print(node.character.name)
-                print(node.character.gender)
-                id_char_searched = node.character.id_key
+                # change char to the one correspondent to the node clicked on
+                if node.character.gender == 'male':
+                    id_char_searched = node.character.id_key
                 break
 
         pygame.display.update()
