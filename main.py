@@ -1,7 +1,6 @@
 import random
-from character import Character
+from character import Character, all_characters
 from textUtils import Node, TextScreen
-import sys
 import pygame
 
 WIDTH = 1920
@@ -43,7 +42,7 @@ def read_surnames(path):
     return lines
 
 
-def draw_tree(tree_list, character_chosen, font, screen, camera_x, camera_y):
+def draw_tree(tree_list, character_chosen, font, screen, camera_x, camera_y, draw_lines=True):
     # camera x and y for offset of objects after camera movement
     position_y = (HEIGHT // 2) - 150 - camera_y
     position_x = 200 - camera_x
@@ -80,22 +79,28 @@ def draw_tree(tree_list, character_chosen, font, screen, camera_x, camera_y):
         position_y += 50
 
     for node in nodes:
-        node_children = []
-        # find the correspondent nodes of each character children
-        if len(node.character.children) != 0:
-            for child in node.character.children:
-                for node_2 in nodes:
-                    if node_2.character is child:
-                        node_children.append(node_2)
+        if draw_lines is True:
+            node_children = find_node_children(node, nodes)
 
-        for child_node in node_children:
-            line_color = pygame.Color(214, 40, 40, 126)
-            pygame.draw.line(screen, line_color, node.position, child_node.position)
+            for child_node in node_children:
+                line_color = pygame.Color(52, 58, 64, 126)
+                pygame.draw.line(screen, line_color, node.position, child_node.position)
 
         node.draw(screen)
 
     # return to get nodes positions
     return nodes
+
+
+def find_node_children(node, nodes):
+    node_children = []
+    # find the correspondent nodes of each character children
+    if len(node.character.children) != 0:
+        for child in node.character.children:
+            for node_2 in nodes:
+                if node_2.character is child:
+                    node_children.append(node_2)
+    return node_children
 
 
 def create_founders(world_characters, names, surnames, id_generator):
@@ -152,6 +157,23 @@ def generate_world_characters():
     return world_characters
 
 
+class Camera:
+    def __init__(self, position_x, position_y, speed):
+        self.position_x = position_x
+        self.position_y = position_y
+        self.speed = speed
+
+    def move(self, keys):
+        if keys[pygame.K_LEFT]:
+            self.position_x -= self.speed
+        elif keys[pygame.K_RIGHT]:
+            self.position_x += self.speed
+        elif keys[pygame.K_DOWN]:
+            self.position_y += self.speed
+        elif keys[pygame.K_UP]:
+            self.position_y -= self.speed
+
+
 def main():
     world_characters = generate_world_characters()
     pygame.init()
@@ -162,9 +184,7 @@ def main():
     title_font = pygame.font.Font("graphics\\alagard.ttf", 25)
 
     # initialize camera and mouse position
-    camera_x = 0
-    camera_y = 0
-    camera_speed = 5
+    camera = Camera(0, 0, 5)
     mouse_x = 0
     mouse_y = 0
 
@@ -176,6 +196,7 @@ def main():
     texts_in_screen = []
     dinasty_tree = True
     direct_tree = False
+    all_tree = False
 
     running = True
     while running:
@@ -192,26 +213,29 @@ def main():
                     texts_in_screen.clear()
                     dinasty_tree = True
                     direct_tree = False
+                    all_tree = False
                     texts_in_screen.append(TextScreen("Dinasty Tree", (960, 50), title_font, 'white'))
-                    texts_in_screen.append(TextScreen(f"{char.surname}", (760, 50), title_font, pygame.Color(214, 40, 40)))
+                    texts_in_screen.append(
+                        TextScreen(f"{char.surname}", (760, 50), title_font, pygame.Color(214, 40, 40)))
                 elif event.key == pygame.K_a:
                     texts_in_screen.clear()
                     dinasty_tree = False
                     direct_tree = True
+                    all_tree = False
                     texts_in_screen.append(TextScreen("Direct Tree", (960, 50), title_font, 'white'))
+                elif event.key == pygame.K_e:
+                    texts_in_screen.clear()
+                    dinasty_tree = False
+                    direct_tree = False
+                    all_tree = True
+                    texts_in_screen.append(TextScreen("All Tree", (960, 50), title_font, 'white'))
 
         screen.fill('black')
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            camera_x -= camera_speed
-        elif keys[pygame.K_RIGHT]:
-            camera_x += camera_speed
-        elif keys[pygame.K_DOWN]:
-            camera_y += camera_speed
-        elif keys[pygame.K_UP]:
-            camera_y -= camera_speed
+        # keys for camera movement
+        camera.move(keys)
 
         char = world_characters[id_char_searched]
         char_name = TextScreen(char.name, (0 + (len(char.name) * 10), 50), title_font, 'white')
@@ -222,15 +246,19 @@ def main():
 
         if dinasty_tree:
             tree = char.dinasty()
+            draw_lines = True
         elif direct_tree:
             tree = char.direct_ancestors()
+            draw_lines = True
+        elif all_tree:
+            tree = all_characters(world_characters)
+            draw_lines = False
 
-        nodes = draw_tree(tree, char, game_font, screen, camera_x, camera_y)
+        nodes = draw_tree(tree, char, game_font, screen, camera.position_x, camera.position_y, draw_lines)
 
         # see if mouse clicked one of the nodes in tree view
         for node in nodes:
             if node.circle_rect.collidepoint(mouse_x, mouse_y) and pygame.mouse.get_pressed()[0]:
-                print(node.character.name)
                 # change char to the one correspondent to the node clicked on
                 if node.character.gender == 'male':
                     id_char_searched = node.character.id_key

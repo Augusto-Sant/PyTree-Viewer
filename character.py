@@ -73,3 +73,34 @@ class Character:
             return f'{prefix} {self.name} {self.surname} child of {self.father.name} with {self.mother.name}'
         else:
             return f'founder {prefix} {self.name} of {self.surname}'
+
+
+def search_all_characters(character, all_chars, level):
+    is_inside = False
+    for listchars in all_chars.values():
+        if character in listchars:
+            is_inside = True
+            break
+
+    if is_inside is False:
+        if level in all_chars:
+            all_chars[level].append(character)
+        else:
+            all_chars.update({level: [character]})
+
+        if len(character.children) > 0:
+            for child in character.children:
+                search_all_characters(child, all_chars, level + 1)
+
+
+def all_characters(world_characters):
+    all_chars = {}
+    for character in world_characters:
+        if character.father is None:
+            search_all_characters(character, all_chars, 0)
+
+    changed_all_chars = {}
+    for i, level in enumerate(reversed(all_chars)):
+        changed_all_chars[i] = all_chars[level]
+
+    return changed_all_chars
