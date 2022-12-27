@@ -48,11 +48,17 @@ class Character:
 
     def add_child(self, names, id_generator):
         new_gender = random.choice(['male', 'female'])
-        if self.gender == 'male':
-            child = Character(id_generator.get_next_id(), random.choice(names[0]), new_gender, self.surname, self, self.spouse)
+        if new_gender == 'male':
+            new_name = random.choice(names[0])
         else:
-            child = Character(id_generator.get_next_id(), random.choice(names[1]), new_gender, self.spouse.surname, self.spouse,
+            new_name = random.choice(names[1])
+
+        if self.gender == 'male':
+            child = Character(id_generator.get_next_id(), new_name, new_gender, self.surname, self, self.spouse)
+        else:
+            child = Character(id_generator.get_next_id(), new_name, new_gender, self.spouse.surname, self.spouse,
                               self)
+
         self.children.append(child)
         self.spouse.children.append(child)
         return child
