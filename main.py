@@ -60,12 +60,16 @@ def draw_tree(tree_list, character_chosen, font, screen, camera_x, camera_y):
                 initial_space = max_value_length - len(tree_list[level])
                 position_x += (initial_space * 130)
 
+            circle_color = pygame.Color(0, 48, 73)
             if character is character_chosen:
-                node = Node(character, (position_x, position_y), font, color,
-                            character.children, circle_color=pygame.Color(247, 127, 0))
+                circle_color = pygame.Color(247, 127, 0)
+            elif character.gender == 'female':
+                circle_color = pygame.Color(95, 15, 64)
             else:
-                node = Node(character, (position_x, position_y), font, color,
-                            character.children)
+                circle_color = pygame.Color(0, 48, 73)
+
+            node = Node(character, (position_x, position_y), font, color,
+                        character.children, circle_color=circle_color)
 
             nodes.append(node)
 
@@ -85,7 +89,7 @@ def draw_tree(tree_list, character_chosen, font, screen, camera_x, camera_y):
                         node_children.append(node_2)
 
         for child_node in node_children:
-            line_color = pygame.Color(214, 40, 40)
+            line_color = pygame.Color(214, 40, 40, 126)
             pygame.draw.line(screen, line_color, node.position, child_node.position)
 
         node.draw(screen)
@@ -166,6 +170,7 @@ def main():
 
     # initialize first char for tree view
     id_char_searched = 74
+    char = world_characters[id_char_searched]
 
     # initialize basic tree ui
     texts_in_screen = []
@@ -188,6 +193,7 @@ def main():
                     dinasty_tree = True
                     direct_tree = False
                     texts_in_screen.append(TextScreen("Dinasty Tree", (960, 50), title_font, 'white'))
+                    texts_in_screen.append(TextScreen(f"{char.surname}", (760, 50), title_font, pygame.Color(214, 40, 40)))
                 elif event.key == pygame.K_a:
                     texts_in_screen.clear()
                     dinasty_tree = False

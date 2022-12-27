@@ -6,7 +6,7 @@ class Node:
     Each Node of a Binary Tree for viewing each character information
     """
 
-    def __init__(self, character, position, font, color, children, circle_color=pygame.Color(0, 48, 73)):
+    def __init__(self, character, position, font, color, children, circle_color):
         self.character = character
         self.position = position
         self.font = font
