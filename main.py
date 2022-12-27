@@ -1,6 +1,6 @@
 import random
 from character import Character
-from textUtils import Node
+from textUtils import Node, TextScreen
 import sys
 import pygame
 
@@ -43,11 +43,11 @@ def read_surnames(path):
     return lines
 
 
-def print_tree(tree_list, font, screen):
-    position_y = 100
-    position_x = 100
-    color = 'black'
-    space = 130
+def draw_tree(tree_list, font, screen):
+    position_y = (HEIGHT//2)-150
+    position_x = 200
+    color = 'white'
+    space = 200
     nodes = []
 
     for level in reversed(tree_list):
@@ -66,11 +66,12 @@ def print_tree(tree_list, font, screen):
             position_x += len(node.character.name) + space
             i += 1
 
-        position_x = 100
+        position_x = 200
         position_y += 50
 
     for node in nodes:
         node_children = []
+        # find the correspondent nodes of each character children
         if len(node.character.children) != 0:
             for child in node.character.children:
                 for node_2 in nodes:
@@ -78,13 +79,15 @@ def print_tree(tree_list, font, screen):
                         node_children.append(node_2)
 
         for child_node in node_children:
-            pygame.draw.line(screen, (255, 0, 0), node.position, child_node.position)
+            line_color = pygame.Color(214, 40, 40)
+            pygame.draw.line(screen, line_color, node.position, child_node.position)
 
         node.draw(screen)
 
 
 def create_founders(world_characters, names, surnames, id_generator):
-    for i in range(20):
+    pairs_of_founders = 10
+    for i in range(pairs_of_founders):
         # read names 0 male 1 female
         new_male_founder = Character(id_generator.get_next_id(), random.choice(names[0]), 'male',
                                      random.choice(surnames))
@@ -112,7 +115,7 @@ def main():
     world_characters = []
     create_founders(world_characters, names, surnames, id_generator)
     # simulate world
-    YEARS_TO_PASS = 400
+    YEARS_TO_PASS = 100
     for i in range(YEARS_TO_PASS):
         for character in world_characters:
             chance = random.randint(0, 1000)
@@ -150,10 +153,14 @@ def main():
     pygame.display.set_caption("Dinasty View")  # TITULO
     clock = pygame.time.Clock()
     game_font = pygame.font.Font("graphics\\alagard.ttf", 15)
+    title_font = pygame.font.Font("graphics\\alagard.ttf", 25)
 
+    texts_in_screen = []
+    dinasty_tree = True
+    direct_tree = False
     running = True
     while running:
-        clock.tick(60)  # FPS
+        clock.tick(5)  # FPS
 
         # close window
         for event in pygame.event.get():
@@ -162,12 +169,31 @@ def main():
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
+                elif event.key == pygame.K_d:
+                    texts_in_screen.clear()
+                    dinasty_tree = True
+                    direct_tree = False
+                    texts_in_screen.append(TextScreen("Dinasty Tree", (960, 50), title_font, 'white'))
+                elif event.key == pygame.K_a:
+                    texts_in_screen.clear()
+                    dinasty_tree = False
+                    direct_tree = True
+                    texts_in_screen.append(TextScreen("Direct Tree", (960, 50), title_font, 'white'))
 
-        screen.fill('white')
+        screen.fill('black')
+        char = world_characters[74]
+        char_name = TextScreen(char.name, (0+(len(char.name)*10), 50), title_font, 'white')
+        char_name.draw(screen)
 
-        char = world_characters[15000]
-        tree = char.direct_ancestors()
-        print_tree(tree, game_font, screen)
+        for text in texts_in_screen:
+            text.draw(screen)
+
+        if dinasty_tree:
+            tree = char.dinasty()
+        elif direct_tree:
+            tree = char.direct_ancestors()
+
+        draw_tree(tree, game_font, screen)
 
         pygame.display.update()
 

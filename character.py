@@ -29,11 +29,12 @@ class Character:
         return family
 
     def search_dinasty(self, dinasty, level):
-        if level - 1 in dinasty:
-            dinasty[level - 1].extend(self.children)
-        else:
-            if len(self.children) > 0:
-                dinasty.update({level - 1: self.children})
+        if self.gender == 'male':
+            if level - 1 in dinasty:
+                dinasty[level - 1].extend(self.children)
+            else:
+                if len(self.children) > 0:
+                    dinasty.update({level - 1: self.children})
 
         if self.father is not None:
             self.father.search_dinasty(dinasty, level + 1)
