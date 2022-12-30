@@ -23,8 +23,9 @@ class Node:
         text = f'{self.character.id_key}. {self.character.name} {self.character.surname}'
         text_surface = self.font.render(text, True, self.color)
         text_rect = text_surface.get_rect()
-        text_rect.center = self.position
+        text_rect.center = (self.position[0], self.position[1] - 20)
         pygame.draw.circle(screen, self.circle_color, self.position, self.circle_radius)
+        self.character.draw_appearance(screen, self)
         screen.blit(text_surface, text_rect)
 
 
