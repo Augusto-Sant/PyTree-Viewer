@@ -97,7 +97,7 @@ def draw_tree(tree_list, character_chosen, font, screen, camera_x, camera_y, dra
             i += 1
 
         position_x = 200 - camera_x
-        position_y += 50
+        position_y += 200
 
     for node in nodes:
         if draw_lines is True:
@@ -140,12 +140,14 @@ def create_founders(world_characters, names, surnames, id_generator):
 
 def marry_event(world_characters, character):
     for character2 in world_characters:
-        if character2.gender != character.gender and character2.spouse is None:
+        if (character2.gender != character.gender and character2.spouse is None
+                and character.surname != character2.surname
+                and (character2.father != character.father and character2.mother != character.mother)):
             character.spouse = character2
             character2.spouse = character
 
 
-def generate_world_characters(years_to_pass, chance_to_marry):
+def generate_world_characters(years_to_pass, chance_to_marry, num_children_cap):
     # read names 0 male 1 female
     names = read_names("names.txt")
     surnames = read_surnames("surnames.txt")
@@ -158,11 +160,19 @@ def generate_world_characters(years_to_pass, chance_to_marry):
     for i in range(years_to_pass):
         for character in world_characters:
             chance = random.randint(0, 1000)
-            if chance > chance_to_marry and character.spouse is not None:
-                child = character.add_child(names, id_generator)
-                world_characters.append(child)
-            elif chance > chance_to_marry and character.spouse is None:
-                marry_event(world_characters, character)
+            if character.alive:
+                character.age += 1
+                if chance + character.age > 1090:
+                    character.alive = False
+                    if character.spouse is not None:
+                        character.spouse.spouse = None
+                        character.spouse = None
+                elif chance > chance_to_marry and character.spouse is not None and len(
+                        character.children) < num_children_cap and len(character.spouse.children) < num_children_cap:
+                    child = character.add_child(names, id_generator)
+                    world_characters.append(child)
+                elif chance > chance_to_marry and character.spouse is None:
+                    marry_event(world_characters, character)
 
     # checks to see if any character in world has wrong id_key
     for i, character in enumerate(world_characters):
@@ -198,7 +208,7 @@ class Camera:
 
 
 def main():
-    world_characters = generate_world_characters(100, 980)
+    world_characters = generate_world_characters(years_to_pass=400, chance_to_marry=980, num_children_cap=8)
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)  # window size
     pygame.display.set_caption("Dinasty View")  # title
@@ -207,13 +217,14 @@ def main():
     title_font = pygame.font.Font("graphics\\alagard.ttf", 25)
 
     # initialize camera and mouse position
-    camera = Camera(0, 0, 5)
+    camera = Camera(0, 0, 9)
     mouse_x = 0
     mouse_y = 0
 
     # initialize first char for tree view
     id_char_searched = 74
     char = world_characters[id_char_searched]
+    node_searched = None
 
     # initialize basic tree ui
     texts_in_screen = []
@@ -228,7 +239,7 @@ def main():
 
     running = True
     while running:
-        clock.tick(60)  # FPS
+        clock.tick(120)  # FPS
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -252,6 +263,9 @@ def main():
                         texts_in_screen.append(
                             TextScreen(f"{char.surname}", (760, 50), title_font, pygame.Color(214, 40, 40)))
                         camera.reset()
+                        if node_searched is not None:
+                            camera.position_x = node_searched.position[0]
+                            camera.position_y = node_searched.position[1]
                     elif event.key == pygame.K_e:
                         texts_in_screen.clear()
                         dinasty_tree = False
@@ -259,6 +273,9 @@ def main():
                         all_tree = False
                         texts_in_screen.append(TextScreen("Direct Tree", (960, 50), title_font, 'white'))
                         camera.reset()
+                        if node_searched is not None:
+                            camera.position_x = node_searched.position[0]
+                            camera.position_y = node_searched.position[1]
                     elif event.key == pygame.K_a:
                         texts_in_screen.clear()
                         dinasty_tree = False
@@ -266,6 +283,9 @@ def main():
                         all_tree = True
                         texts_in_screen.append(TextScreen("All Tree", (960, 50), title_font, 'white'))
                         camera.reset()
+                        if node_searched is not None:
+                            camera.position_x = node_searched.position[0]
+                            camera.position_y = node_searched.position[1]
 
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
@@ -305,6 +325,7 @@ def main():
                 if node.circle_rect.collidepoint(mouse_x, mouse_y) and pygame.mouse.get_pressed()[0]:
                     # change char to the one correspondent to the node clicked on
                     id_char_searched = node.character.id_key
+                    node_searched = node
                     break
         else:
             screen.fill(pygame.Color(0, 8, 20))

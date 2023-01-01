@@ -12,6 +12,8 @@ class Character:
         self.mother = mother
         self.spouse = spouse
         self.children = []
+        self.age = 0
+        self.alive = True
         self.skin_color = random.choice(["brown", "white", "pink", "pardo"])
         self.hair_color = random.choice(["black", "brown", "blonde"])
         if self.gender == 'male':
