@@ -78,7 +78,7 @@ class Character:
         if self.father is not None:
             self.father.search_direct_lineage(family, level + 1)
 
-    def direct_ancestors(self):
+    def direct_ancestors_tree(self):
         family = {}
         self.search_direct_lineage(family, 0)
         return family
@@ -96,7 +96,7 @@ class Character:
         if self.father is None:
             dinasty.update({level: [self]})
 
-    def dinasty(self):
+    def dinasty_tree(self):
         dinasty = {}
         self.search_dinasty(dinasty, 0)
         return dinasty
@@ -153,15 +153,3 @@ def search_all_characters(character, all_chars, level):
             for child in character.children:
                 search_all_characters(child, all_chars, level + 1)
 
-
-def all_characters(world_characters):
-    all_chars = {}
-    for character in world_characters:
-        if character.father is None:
-            search_all_characters(character, all_chars, 0)
-
-    changed_all_chars = {}
-    for i, level in enumerate(reversed(all_chars)):
-        changed_all_chars[i] = all_chars[level]
-
-    return changed_all_chars
