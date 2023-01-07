@@ -2,6 +2,7 @@ import pygame
 import world_elements
 import string
 import ui_elements
+import character_elements
 
 
 class Application:
@@ -46,7 +47,7 @@ class MenuMode(ApplicationMode):
         super().__init__(width, height, font)
         self.name = "menu_mode"
 
-    def generate_world(self):
+    def generate_random_world(self):
         world = world_elements.World("names.txt", "surnames.txt")
         world.generate_random_world_characters(200, 980, 8)
 
@@ -57,10 +58,25 @@ class MenuMode(ApplicationMode):
 
         return char, world
 
+    def generate_custom_world(self):
+        world = world_elements.World("names.txt", "surnames.txt")
+        aegon_i = character_elements.Character(world.id_generator.get_next_id(), "Aegon", "male", "Targaryen")
+        aegon_i.set_genetics("pink", "white", "purple")
+        aegon_i.beard = False
+        maegor = character_elements.Character(world.id_generator.get_next_id(), "Maegor", "male", "Targaryen",
+                                              father=aegon_i)
+        aegon_i.children.append(maegor)
+        maegor.set_genetics("pink", "white", "purple")
+        for x in [aegon_i, maegor]:
+            world.add_character(x)
+        char = world.world_characters[0]
+        return char, world
+
     def create_buttons(self):
         generate_button = ui_elements.Button((self.width // 2 - 195, 200), 400, 30, "Generate random World", self.font,
-                                             self.generate_world)
-        custom_world_button = ui_elements.Button((self.width // 2 - 195, 300), 400, 30, "Custom World", self.font, None)
+                                             self.generate_random_world)
+        custom_world_button = ui_elements.Button((self.width // 2 - 195, 300), 400, 30, "Custom World", self.font,
+                                                 self.generate_custom_world)
         self.buttons.append(generate_button)
         self.buttons.append(custom_world_button)
 
@@ -87,29 +103,52 @@ class CreationMode(ApplicationMode):
         super().__init__(width, height, font)
         self.name = "creation_mode"
         self.letters_input = []
+        self.new_characters_names = []
+        self.new_name_word_limit = 30
+
+    def create_buttons(self):
+        accept_button = ui_elements.Button((self.width // 2, 300), 400, 30, "Add", self.font, None)
+        accept_button.action = self.add_new_name
+        self.buttons.append(accept_button)
 
     def create_texts(self):
         create_world_text = ui_elements.TextScreen("Create World", (self.width // 2, 50), self.font, "white")
         self.texts.append(create_world_text)
-        text_new_character = ui_elements.TextScreen("New Character", (self.width // 2, 150), self.font, "white")
+        text_new_character = ui_elements.TextScreen("New Founder Character (example: William McDonut)",
+                                                    (self.width // 2, 150), self.font, "white")
         self.texts.append(text_new_character)
 
-    def view(self, screen, texts_in_screen, mouse_x, mouse_y, game_font):
+    def view(self, screen, texts_in_screen, buttons_in_screen, mouse_x, mouse_y, game_font):
 
-        test_text = ui_elements.TextScreen("".join(self.letters_input), (self.width // 2, 175), self.font, "white")
-        test_text.background_color = "blue"
-        test_text.draw(screen)
+        new_name_character = ui_elements.TextScreen("".join(self.letters_input), (self.width // 2, 175), self.font,
+                                                    "white")
+        new_name_character.background_color = "gray"
+        new_name_character.draw(screen)
+        count_characters = ui_elements.TextScreen(str(len(self.new_characters_names)), ((self.width // 2 + 100), 50),
+                                                  self.font, "red")
+        count_characters.draw(screen)
         for text in self.texts:
             if text not in texts_in_screen:
                 texts_in_screen.append(text)
+
+        for button in self.buttons:
+            button.render()
+            if button not in buttons_in_screen:
+                buttons_in_screen.append(button)
+
+    def add_new_name(self):
+        new_name = "".join(self.letters_input)
+        self.new_characters_names.append(f'{new_name}')
+        self.letters_input.clear()
 
     def controls(self, event):
         if event.key == pygame.K_BACKSPACE:
             if len(self.letters_input) > 0:
                 self.letters_input.pop()
 
-        if event.unicode in string.ascii_letters or event.key == pygame.K_SPACE:
-            self.letters_input.append(event.unicode)
+        if len(self.letters_input) < self.new_name_word_limit:
+            if event.unicode in string.ascii_letters or event.key == pygame.K_SPACE:
+                self.letters_input.append(event.unicode)
 
 
 class DinastyViewMode(ApplicationMode):

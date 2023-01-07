@@ -17,6 +17,7 @@ class World:
         self.world_characters = []
         self.names = []
         self.surnames = []
+        self.id_generator = IdGenerator()
         self.read_names(names_path)
         self.read_surnames(surnames_path)
 
@@ -40,13 +41,13 @@ class World:
 
         return changed_all_chars
 
-    def create_random_founders(self, id_generator, pairs_of_founders):
+    def create_random_founders(self, pairs_of_founders):
         for i in range(pairs_of_founders):
             # read names 0 male 1 female
-            new_male_founder = character_elements.Character(id_generator.get_next_id(), random.choice(self.names[0]),
+            new_male_founder = character_elements.Character(self.id_generator.get_next_id(), random.choice(self.names[0]),
                                                             'male',
                                                             random.choice(self.surnames))
-            new_female_founder = character_elements.Character(id_generator.get_next_id(), random.choice(self.names[1]),
+            new_female_founder = character_elements.Character(self.id_generator.get_next_id(), random.choice(self.names[1]),
                                                               'female',
                                                               random.choice(self.surnames))
             new_male_founder.spouse = new_female_founder
@@ -58,8 +59,7 @@ class World:
 
     def generate_random_world_characters(self, years_to_pass, chance_to_marry, num_children_cap):
         # characters in world
-        id_generator = IdGenerator()
-        self.create_random_founders(id_generator, 10)
+        self.create_random_founders(10)
 
         for i in range(years_to_pass):
             for character in self.world_characters:
@@ -74,7 +74,7 @@ class World:
                     elif (chance > chance_to_marry and character.spouse is not None and len(
                             character.children) < num_children_cap and len(
                             character.spouse.children) < num_children_cap):
-                        child = character.add_child(self.names, id_generator)
+                        child = character.add_child(self.names, self.id_generator)
                         self.add_character(child)
                     elif chance > chance_to_marry and character.spouse is None:
                         self.marry_event(character)

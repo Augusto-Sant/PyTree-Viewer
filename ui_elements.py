@@ -58,12 +58,20 @@ class TextScreen:
         self.font = font
         self.color = color
         self.background_color = None
+        self.background_surface = pygame.Surface((450, 50))
 
     def draw(self, screen):
-        text_surface = self.font.render(self.text, True, self.color)
-        text_rect = text_surface.get_rect()
-        text_rect.center = self.position
-        screen.blit(text_surface, text_rect)
+        if self.background_color is not None:
+            self.background_surface.fill(self.background_color)
+
+            text_surface = self.font.render(self.text, True, "black")
+            self.background_surface.blit(text_surface, (50, 10))
+            screen.blit(self.background_surface, (self.position[0] - 150, self.position[1]))
+        else:
+            text_surface = self.font.render(self.text, True, self.color)
+            text_rect = text_surface.get_rect()
+            text_rect.center = self.position
+            screen.blit(text_surface, text_rect)
 
 
 class Button:

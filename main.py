@@ -52,6 +52,7 @@ def main():
                 if event.key == pygame.K_ESCAPE:
                     if application.mode is not menu_mode:
                         texts_in_screen.clear()
+                        buttons_in_screen.clear()
                         application.set_mode(menu_mode)
                     else:
                         running = False
@@ -64,8 +65,6 @@ def main():
                 elif application.mode is worldmap_view_mode:
                     worldmap_view_mode.controls()
 
-        print(len(texts_in_screen))
-
         mouse_x, mouse_y = pygame.mouse.get_pos()
         # keys for camera movement
         camera.move(keys)
@@ -74,7 +73,7 @@ def main():
         if application.mode is menu_mode:
             menu_mode.view(screen, texts_in_screen, buttons_in_screen)
         elif application.mode is creation_mode:
-            creation_mode.view(screen, texts_in_screen, mouse_x, mouse_y,game_font)
+            creation_mode.view(screen, texts_in_screen, buttons_in_screen, mouse_x, mouse_y, game_font)
         elif application.mode is dinasty_view_mode:
             dinasty_view_mode.view(screen, texts_in_screen, camera, game_font, node_tree, mouse_x, mouse_y)
         elif application.mode is worldmap_view_mode:
@@ -99,9 +98,13 @@ def main():
                     texts_in_screen.clear()
                     application.set_mode(dinasty_view_mode)
                 elif button.text == "Custom World":
+                    dinasty_view_mode.char, dinasty_view_mode.world = button.action()
                     buttons_in_screen.clear()
                     texts_in_screen.clear()
-                    application.set_mode(creation_mode)
+                    application.set_mode(dinasty_view_mode)
+                else:
+                    button.action()
+                    break
             button.render()
             button.draw(screen)
 

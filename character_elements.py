@@ -152,4 +152,3 @@ def search_all_characters(character, all_chars, level):
         if len(character.children) > 0:
             for child in character.children:
                 search_all_characters(child, all_chars, level + 1)
-
